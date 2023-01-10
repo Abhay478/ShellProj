@@ -87,9 +87,7 @@ int copy_arg(char ** arg, char ** temp) {
 
 // takes line and splits into argument vector.
 char ** parse(char * cmd, int * bg) {
-    // char ** out[2];
     char ** arg = malloc(N_ARGS * sizeof(char *));
-    out[0] = arg;
     int i;
     for(i = 0; cmd && (i < N_ARGS); i++ ) {
         char * temp = strsep(&cmd, " "); // this shreds cmd, and temp points to a location within what used to be cmd.
