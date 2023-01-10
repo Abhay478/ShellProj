@@ -1,38 +1,35 @@
 #include "osh.h"
 
-// returns path to executable. Will be extended.
-extern int dbg, logs, sarg, mem;
-void set_path(char ** arg) {
+// returns cmd to executable. Will be extended.
+int set_path(char ** arg) {
     FILE * f; // check for existence
+    if(check_env("logs")) printf("Path.\n");
+    if(fopen(arg[0], "r")) return 0; // current directory
 
-    if(logs) printf("Path.\n");
-    if(fopen(arg[0], "r")) return; // current directory
+    char * places = calloc(strlen(getenv("PATH")), sizeof(char));
+    strlcpy(places, getenv("PATH"), strlen(getenv("PATH")));
+    while(places) {
+        char * temp = strsep(&places, ":");
+        char * cmd = calloc(1 + strlen(temp) + strlen(arg[0]), sizeof(char));
+        sprintf(cmd, "%s/%s", temp, arg[0]);
 
+        if(check_env("dbg")) printf("%s\n", cmd);
 
-    char * path = calloc(6 + strlen(arg[0]), sizeof(char));
-    sprintf(path, "/bin/");
-    sprintf(path + 5, "%s", arg[0]);
-    if(dbg) printf("%s\n", path);
-
-    if((f = fopen(path, "r")) != 0){
-        if(mem) free(arg[0]);
-        arg[0] = path;
-        return;
+        if((f = fopen(cmd, "r")) != 0){
+            if(check_env("mem")) {char * dummy = arg[0]; free(dummy);}
+            if(check_env("logs")) printf("%s\n", cmd);
+            arg[0] = cmd;
+            return 0;
+        }
+        else{
+            if(check_env("logs")) printf("Not in %s\n", temp);
+            if(check_env("mem")) free(cmd);
+        }
     }
-    if(logs) printf("Not in /bin\n");
 
-    char * temp = realloc(path, (10 + strlen(arg[0])) * sizeof(char));
-    if(mem) free(path);
-    path = temp;
+    if(check_env("mem")) free(places);
 
-    sprintf(path, "/usr/bin/");
-    sprintf(path + 9, "%s", arg[0]);
-    if(dbg) printf("%s\n", path);
-
-    if((f = fopen(path, "r")) != 0){
-        if(mem) free(arg[0]);
-        arg[0] = path;
-        return;
-    }
+    // Invalid command:
+    return -1;
     
 }

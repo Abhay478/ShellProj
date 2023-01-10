@@ -1,6 +1,5 @@
 #include "osh.h"
 
-// extern int sarg;
 int spaces() {
     int c;
     while((c = getchar()) == ' ');
