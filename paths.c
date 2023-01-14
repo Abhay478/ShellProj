@@ -1,11 +1,10 @@
 #include "osh.h"
 
-// returns cmd to executable. Will be extended.
+// returns cmd to executable.
 int set_path(char ** arg) {
     FILE * f; // check for existence
-    if(check_env("logs")) printf("Path.\n");
-    if(fopen(arg[0], "r")) return 0; // current directory
-
+    if((f = fopen(arg[0], "r"))) {fclose(f); return 0;} // current directory
+    if(check_env("logs")) printf("Exploring path.\n");
     char * places = calloc(strlen(getenv("PATH")), sizeof(char));
     strlcpy(places, getenv("PATH"), strlen(getenv("PATH")));
     while(places) {
@@ -19,6 +18,7 @@ int set_path(char ** arg) {
             if(check_env("mem")) {char * dummy = arg[0]; free(dummy);}
             if(check_env("logs")) printf("%s\n", cmd);
             arg[0] = cmd;
+            fclose(f);
             return 0;
         }
         else{

@@ -30,6 +30,8 @@ void prompt(char ** cmd) {
         else c = getchar();
     }
 
+    if(check_env("dbg")) printf("%s\n", *cmd);
+
     fflush(stdin);
     fflush(stdout);
 }

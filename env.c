@@ -2,34 +2,36 @@
 // extern int dbg, logs, sarg, mem;
 void show_env();
 int env(char ** arg) {
-    if(!strcmp(*arg, "exit")) exit(0);
+    if(check_env("logs")) {
+        printf("Env commands.\n");
+    }
     if(!strcmp(*arg, "show")) {
         show_env();
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "dbg")) {
         if(check_env("dbg")) setenv("dbg", "0", 1);
         else setenv("dbg", "1", 1);
 
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "logs")) {
         if(check_env("logs")) setenv("logs", "0", 1);
         else setenv("logs", "1", 1);
 
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "sarg")) {
         if(check_env("sarg")) setenv("sarg", "0", 1);
         else setenv("sarg", "1", 1);
 
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "mem")) {
         if(check_env("mem")) setenv("mem", "0", 1);
         else setenv("mem", "1", 1);
 
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "bare")) {
         setenv("dbg", "0", 1);
@@ -37,7 +39,7 @@ int env(char ** arg) {
         setenv("sarg", "0", 1);
         setenv("mem", "0", 1);
 
-        return 1;
+        return 0;
     }
     if(!strcmp(*arg, "full")) {
         setenv("dbg", "1", 1);
@@ -45,26 +47,40 @@ int env(char ** arg) {
         setenv("sarg", "1", 1);
         // setenv("mem", "1", 1);
 
-        return 1;
+        return 0;
     }
-    return 0;
+    if(check_env("logs")) {
+        printf("Env unchanged.\n");
+    }
+    return 1;
 
 }
 
 void v_env(char ** argv) {
     for(int i = 0; argv[i]; i++) {
-        if(!env(&argv[i])) {
-            printf("Invalid environment setting: %s\n", argv[i]);
+        if(env(&argv[i])) {
+            printf("Invalid environment command: %s\n", argv[i]);
         }
     }
 }
 
-void what_args(char ** arg) {
+void what_exec(Exec * the) {
     if(!check_env("sarg")) return;
-    if(!arg) {printf("Clean.\n"); return;}
+    if(!the->args) {printf("Clean.\n"); return;}
+    printf("--------\n");
+
     if(check_env("logs")) printf("Args be: \n");
-    for(int i = 0; arg[i] && *arg[i]; i++)
-        printf("%d: \"%s\"\n", i + 1, arg[i]);
+    for(int i = 0; the->args[i] && *(the->args[i]); i++)
+        printf("%d: \"%s\"\n", i + 1, the->args[i]);
+
+    if(check_env("logs")) printf("IO be: \n");
+    printf("fd: %d -> %d\n", the->fd[0], the->fd[1]);
+
+    if(the->pipee) {
+        if(check_env("logs")) printf("Pipee be: \n");
+        what_exec(the->pipee);
+    }
+    printf("--------\n");
 }
 
 void make_env() {
@@ -72,8 +88,7 @@ void make_env() {
     setenv("logs", "0", 0);
     setenv("sarg", "0", 0);
     setenv("mem", "0", 0);
-    setenv("file", "-1", 0);
-    setenv("io", "-1", 0);
+    setenv("caret", "0", 0);
     setenv("PATH", "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/TeX/texbin:/Users/abhay/.cabal/bin:/Users/abhay/.ghcup/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin:/Users/abhay/.cargo/bin", 0);
     setenv("HOME", "/Users/abhay", 0);
 
