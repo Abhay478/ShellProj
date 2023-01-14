@@ -3,6 +3,7 @@
 */
 
 #include "osh.h"
+History * his;
 
 // memory management - breaking. Big issue. Will fix later. For now, do not use.
 void clean(char ** arg) {
@@ -25,54 +26,28 @@ void bangbang(char ** arg, char *** bang) {
 }
 
 int go(char ** cmd) {
-    static char ** bang;
+    // static char ** bang;
     prompt(cmd);
-    if(!strlen(*cmd)) return 1;
+    if(!strlen(*cmd)) return 1; // newline only
+    if(!strcmp(*cmd, "exit")) return -1;
+    if(!strcmp(*cmd, "lore")) {
+        lore(his);
+        printf("\n");
+        return 1;
+    }
 
     int bg = 0;
 
-    char ** arg = parse(*cmd, &bg);
-    if(!arg) {arg = bang; if(check_env("logs")) printf("Bang.\n");}
-    if(!arg) {printf("No prior commands received.\n"); return 1;}
+    Exec * the = build_exec(cmd, bg);
+    if(!the) return 1;
     
-    what_args(arg);
+    what_exec(the);
 
-    if(check_env("logs")) printf("Parsed.\n");
+    spawn(the);
+    if(!check_env("caret")) push(his, the);
+    // what_exec(the);
 
-    int e;
-    if((e = env(arg))) {
-        if(check_env("logs")) printf("Ecall.\n");
-        if(check_env("mem")) clean(arg);
-        return e;
-    }
-
-    if(set_path(arg)) {
-        printf("OSH: Unknown command: %s\n", arg[0]);
-        if(check_env("mem")) clean(arg);
-        return 1;
-    };
     
-    what_args(arg);
-    bangbang(arg, &bang);
-
-    spawn(arg, bg);
-    what_args(arg);
-
-    if(check_env("mem")) clean(arg);
-    arg = 0;
-
-    // int fd;
-    // if((fd = check_env("file")) != -1) {
-    //     // struct stat buf;
-    //     // fstat(STDOUT_FILENO, &buf);
-    //     // if(!buf.) dup2(STDOUT_FILENO, fd); 
-    //     // else dup2(STDIN_FILENO, fd); 
-    //     close(fd);
-    //     open(stdin, O_RDONLY);
-    //     open(stdout, O_WRONLY);
-    //     setenv("file", "-1", 1);
-    // }
-
     return 1;
 } 
 
@@ -80,6 +55,8 @@ int main(int argc, char * argv[]) {
     char * cmd;
     make_env();
     v_env(++argv); // environment variables
+
+    his = init();
 
     while(go(&cmd) != -1) if(check_env("mem")) free(cmd);
     

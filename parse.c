@@ -4,6 +4,8 @@
 #undef itoa
 #endif
 
+extern History * his;
+
 char * itoa(int n) {
     double l = log10(n);
     long int length = (l == (long int)l)?(long int)l:((long int)l + 1);
@@ -26,50 +28,64 @@ void int_env(char * env, int n, int ov) {
     free(s);
 }
 
-void redirect(char * file, int io) {
-    while(isblank(*file)) file++;
-
-    // char * fname = malloc()
-    char * x = strchr(file, ' ');
-    if(x) *x = 0;
-
-    int fd;
-    FILE * f = fopen(file, io?"w":"r");
-    if(!f) {
-        if(check_env("dbg")) printf("Unable to locate file: %s\n", file);
-        return;
+void redirect(Exec * the) {
+    char * p = strstr(the->cmd, "|");
+    if(p) return;
+    char * G, * L, *infile, *outfile;
+    char * g = strstr(the->cmd, "{");
+    char * l = strstr(the->cmd, "[");
+    if(g) {
+        G = strstr(g, "}");
+        outfile = calloc(G - g, sizeof(char));
+        strncpy(outfile, g + 1, G - g - 1);
+        FILE * f = fopen(outfile, "w");
+        the->fd[1] = fileno(f);
+        if(check_env("dbg")) printf("fd: %d %d\n", the->fd[0], the->fd[1]);
     }
-    fd = fileno(f);
-    // dup2(fd, io?STDIN_FILENO:STDOUT_FILENO);
-    int_env("file", fd, 1);
-    setenv("io", io?"1":"0", 1);
+    if(l) {
+        L = strstr(l, "]");
+        infile = calloc(L - l, sizeof(char));
+        strncpy(infile, l + 1, L - l - 1);
+        FILE * f = fopen(infile, "r");
+        if(!f) {
+            if(check_env("dbg")) printf("Unable to locate file: %s\n", infile);
+            return;
+        }
+        the->fd[0] = fileno(f);
+        if(check_env("dbg")) printf("fd: %d %d\n", the->fd[0], the->fd[1]);
+    }
 
-    if(check_env("dbg")) printf("fd: %d\n", fd);
-
-
+    if(!g && !l) {
+        if(check_env("logs")) printf("No redirection.\n");
+    }
 
 }
 
-int spl(char * temp, int * bg, char ** arg, char * cmd) {
+int spl(char * temp, Exec * the) {
 
-        if(!strcmp(temp, "&")) {
-            if(check_env("logs")) printf("& handled.\n");
-            *bg = 1;
-            return 1;
-        }
-        if(!strcmp(temp, "!!")) {
-            if(check_env("logs")) printf("!! handled.\n");
-            return 0;
-        }
-        if(!strcmp(temp, ">")) {
-            redirect(cmd, STDOUT_FILENO);
-            return 1;
-        }
-        if(!strcmp(temp, "<")) {
-            redirect(cmd, STDIN_FILENO);
-            return 1;
-        }
-        return -1;
+    if(!strcmp(temp, "&")) {
+        if(check_env("logs")) printf("& handled.\n");
+        the->fgbg = 1;
+        return -7;
+    }
+    if(!strcmp(temp, "!!")) {
+        if(check_env("logs")) printf("!! handled.\n");
+        return -11;
+    }
+    if(temp[0] == '^') {
+        if(check_env("logs")) printf("^ handled.\n");
+        setenv("caret", "1", 1);
+        return atoi(temp + 1);
+    }
+    if(!strcmp(temp, "|")) {
+        if(check_env("logs")) printf("| handled.\n");
+        // the->pipee = setup(temp + 2, 0);
+        char * tb = temp + 2;
+        the->pipee = build_exec(&tb, 1);
+        return 0;
+
+    }
+    return -1;
 }
 
 int copy_arg(char ** arg, char ** temp) {
@@ -85,33 +101,55 @@ int copy_arg(char ** arg, char ** temp) {
     return 0;
 }
 
+Exec * setup(char * cmd, int bg) {
+    Exec * out = calloc(1, sizeof(Exec));
+    out->args = malloc(N_ARGS * sizeof(char *));
+    out->cmd = malloc(strlen(cmd) * sizeof(char));
+
+    strlcpy(out->cmd, cmd, ARG_LEN);
+    out->fgbg = bg;
+    out->fd[0] = 0;
+    out->fd[1] = 1;
+    out->pipee = NULL;
+
+    redirect(out);
+    // char * to0 = strstr(cmd, " > ");
+    // if(to0) *to0 = 0;
+    // to0 = strstr(cmd, " < ");
+    // if(to0) *to0 = 0;
+    return out;
+}
+
 // takes line and splits into argument vector.
-char ** parse(char * cmd, int * bg) {
-    char ** arg = malloc(N_ARGS * sizeof(char *));
+Exec * parse(char * cmd, int bg) {
+    Exec * out = setup(cmd, bg);
+
     int i;
     for(i = 0; cmd && (i < N_ARGS); i++ ) {
         char * temp = strsep(&cmd, " "); // this shreds cmd, and temp points to a location within what used to be cmd.
-
-        switch(spl(temp, bg, arg, cmd)) {
-            case 0: return NULL;
-            case 1: return arg;
-            default: break;
+        if(temp[0] == '{' || temp[0] == '[') continue; // skips redirection.
+        int sp = spl(temp, out);
+        switch(sp) {
+            case -11: return pop(his); // bangbang
+            case -7: return out; // & has to be at the end
+            case -1 : break;
+            case 0: return out;
+            default : return peep(his, sp);
         }
+        setenv("caret", "0", 1);
 
         if(!strcmp(temp, "~")) {
             temp = getenv("HOME");
         }
         if(temp[0] == '$') {
-            temp = getenv(++temp);
+            temp = getenv(++temp); // add more of these
         }
         
-        if(copy_arg(arg + i, &temp)) break;
+        if(copy_arg(out->args + i, &temp)) break;
     }
-    *bg = 0;
 
     if(check_env("logs")) printf("Args isolated.\n");
 
-    return arg;
+    return out;
 }
-
 
