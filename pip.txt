@@ -1,0 +1,8 @@
+Pipe redirected: 6
+--------
+Args be: 
+1: "/usr/bin/grep"
+2: "a"
+IO be: 
+fd: 7 -> 6
+--------

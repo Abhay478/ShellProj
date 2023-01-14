@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "OSH debug",
+            "program": "${fileDirname}/main",
+            "args": [
+                // "-fcolor-diagnostics",
+                // "-fansi-escape-codes",
+                // "-I",
+                // "~/Code/Lib/OSAPI",
+                // "-g",
+                // "main.c",
+                // "env.c",
+                // "parse.c",
+                // "paths.c",
+                // "spawn.c",
+                // "prompt.c",
+                // "history.c",
+                // "~/Code/Lib/OSAPI/lib.a",
+                // "-o",
+                // "${fileDirname}/main"
+                "full"
+            ],
+            "preLaunchTask": "C/C++: clang build active file"
+            
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "program": "${workspaceFolder}/<executable file>",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

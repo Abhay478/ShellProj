@@ -1,0 +1,38 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang build active file",
+            "command": "/usr/bin/clang",
+            "args": [
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-I",
+                "~/Code/Lib/OSAPI",
+                "-g",
+                "main.c",
+                "env.c",
+                "parse.c",
+                "paths.c",
+                "spawn.c",
+                "prompt.c",
+                "history.c",
+                "build.c",
+                "~/Code/Lib/OSAPI/lib.a",
+                "-o",
+                "${fileDirname}/main"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
