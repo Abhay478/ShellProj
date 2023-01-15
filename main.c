@@ -16,51 +16,42 @@ void clean(char ** arg) {
     free(arg);
 }
 
-void bangbang(char ** arg, char *** bang) {
-    if(check_env("mem") && *bang) clean(*bang);
-    *bang = malloc(N_ARGS * sizeof(char *));
-    for(int i = 0; arg[i] && *arg[i]; i++){
-        (*bang)[i] = malloc(ARG_LEN * sizeof(char));
-        strlcpy((*bang)[i], arg[i], 20);
-    }
-}
-
+// runs in each iteration of the main loop - interactive section.
 int go(char ** cmd) {
-    // static char ** bang;
-    prompt(cmd);
+    prompt(cmd); // gets line. Unbuffered, so it ignores multiple spaces and stuff.
     if(!strlen(*cmd)) return 1; // newline only
-    if(!strcmp(*cmd, "exit")) return -1;
-    if(!strcmp(*cmd, "lore")) {
-        lore(his);
+    if(!strcmp(*cmd, "exit")) return -1; // classic exit command.
+    if(!strcmp(*cmd, "lore")) { // prints all command in history. Pretty useful, imo.
+        lore(his); // what I said above, but also resets the envs.
         printf("\n");
         return 1;
     }
 
     int bg = 0;
 
-    Exec * the = build_exec(cmd, bg);
-    if(!the) return 1;
+    // obviously, it takes a line of input and decomposes it into pipes and indirections.
+    Exec * the = build_exec(cmd, bg); 
+    if(!the) return 1; // boo
     
     what_exec(the);
 
-    spawn(the);
-    if(!check_env("caret")) push(his, the);
-    // what_exec(the);
-
+    spawn(the); // real stuff
+    strip_descriptors(the); // closes the newly opened files / pipes.
+    if(!check_env("caret")) push(his, the); // pushes new commands, not ones that had been fetched from history.
     
     return 1;
 } 
 
 int main(int argc, char * argv[]) {
     char * cmd;
-    make_env();
-    v_env(++argv); // environment variables
+    make_env(); // initialises environment variables.
+    v_env(++argv); // sets environment variables
 
-    his = init();
+    his = init(); // duh
 
-    while(go(&cmd) != -1) if(check_env("mem")) free(cmd);
+    while(go(&cmd) != -1) if(check_env("mem")) free(cmd); // shell
     
-    if(check_env("mem")) free(cmd);
+    if(check_env("mem")) free(cmd); 
     if(check_env("dbg")) printf("Out.\n");
 
     return 0;

@@ -1,11 +1,21 @@
 #include "osh.h"
 
+void strip_descriptors(Exec * done) {
+    Exec * current = done;
+    while(current) {
+        if(current->fd[0] != 0) close(current->fd[0]);
+        if(current->fd[1] != 1) close(current->fd[1]);
+        current = current->pipee;
+    }
+}
+
 void push(History * the, Exec * done) {
     if(the->hist[the->capac]) {
         if(check_env("mem")) free(the->hist[the->capac]);
     }
     the->hist[the->capac] = done;
     the->capac = (1 + the->capac) % MEMORY;
+    
 }
 
 History * init() {
@@ -29,10 +39,14 @@ Exec * peep(History * the, int age) {
 }
 
 void lore(History * the) {
+    char * full = "full";
+    env(&full);
     for(int i = 0; i < MEMORY; i++) {
         if(the->hist[i]) {
             what_exec(the->hist[i]);
             printf("********\n");
         }
     }
+    char * bare = "bare";
+    env(&bare);
 }

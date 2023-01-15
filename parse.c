@@ -6,6 +6,7 @@
 
 extern History * his;
 
+// Mac has no itoa, so this.
 char * itoa(int n) {
     double l = log10(n);
     long int length = (l == (long int)l)?(long int)l:((long int)l + 1);
@@ -22,72 +23,86 @@ char * itoa(int n) {
     return out;
 }
 
+// so that I can set the value of an environment variable to the value of a local variable
 void int_env(char * env, int n, int ov) {
     char * s = itoa(n);
     setenv(env, s, ov);
     free(s);
 }
 
-void redirect(Exec * the) {
-    char * p = strstr(the->cmd, "|");
-    if(p) return;
+// I reinvented some syntax, [file] for input, {file} for output.
+void redirect(Exec * the, char * fp, char * lp) {
+    
     char * G, * L, *infile, *outfile;
-    char * g = strstr(the->cmd, "{");
-    char * l = strstr(the->cmd, "[");
+    char * g = strrchr(the->cmd, '{'); // only the last one.
+    char * l = strchr(the->cmd, '['); // only the first one.
     if(g) {
-        G = strstr(g, "}");
+        if(fp || lp) return;
+        // if(lp && g < lp) return;
+        // because any output redirection before piping is evil.
+
+        // grunt work
+        G = strrchr(g, '}');
         outfile = calloc(G - g, sizeof(char));
         strncpy(outfile, g + 1, G - g - 1);
         FILE * f = fopen(outfile, "w");
-        the->fd[1] = fileno(f);
+
+        the->fd[1] = fileno(f); // this is why using the struct was nice.
         if(check_env("dbg")) printf("fd: %d %d\n", the->fd[0], the->fd[1]);
+        free(outfile);
     }
     if(l) {
+        if(fp && l > fp) return;
+        // because any input direction after piping is evil.
+
+        // grunt work 2.0
         L = strstr(l, "]");
         infile = calloc(L - l, sizeof(char));
         strncpy(infile, l + 1, L - l - 1);
         FILE * f = fopen(infile, "r");
         if(!f) {
             if(check_env("dbg")) printf("Unable to locate file: %s\n", infile);
+            free(infile);
             return;
         }
-        the->fd[0] = fileno(f);
+
+        the->fd[0] = fileno(f); // yay structs
         if(check_env("dbg")) printf("fd: %d %d\n", the->fd[0], the->fd[1]);
+        free(infile);
     }
 
     if(!g && !l) {
-        if(check_env("logs")) printf("No redirection.\n");
+        if(check_env("logs")) printf("No redirection.\n"); // thank god.
     }
 
 }
 
 int spl(char * temp, Exec * the) {
-
     if(!strcmp(temp, "&")) {
         if(check_env("logs")) printf("& handled.\n");
         the->fgbg = 1;
-        return -7;
+        return -7; // guess why?
     }
     if(!strcmp(temp, "!!")) {
         if(check_env("logs")) printf("!! handled.\n");
-        return -11;
+        return -11; // .
     }
     if(temp[0] == '^') {
         if(check_env("logs")) printf("^ handled.\n");
         setenv("caret", "1", 1);
-        return atoi(temp + 1);
+        return atoi(temp + 1); // offset, basically.
     }
-    if(!strcmp(temp, "|")) {
+    if(!strcmp(temp, "|")) { // .
         if(check_env("logs")) printf("| handled.\n");
-        // the->pipee = setup(temp + 2, 0);
-        char * tb = temp + 2;
-        the->pipee = build_exec(&tb, 1);
+        char * tb = temp + 2; // Spacing restrictions - at least one space between | and other stuff.
+        the->pipee = build_exec(&tb, 1); // the recursive stuff that potentially makes multiple pipes work - remember, we called build_exec() in main, around four stack levels ago.
         return 0;
 
     }
     return -1;
 }
 
+// strlcpy wrapper.
 int copy_arg(char ** arg, char ** temp) {
     *arg = malloc(ARG_LEN * sizeof(char));
     strlcpy(*arg, *temp, ARG_LEN); // this helps store the arguments in a vector
@@ -101,6 +116,7 @@ int copy_arg(char ** arg, char ** temp) {
     return 0;
 }
 
+// initialise Exec object.
 Exec * setup(char * cmd, int bg) {
     Exec * out = calloc(1, sizeof(Exec));
     out->args = malloc(N_ARGS * sizeof(char *));
@@ -111,33 +127,32 @@ Exec * setup(char * cmd, int bg) {
     out->fd[0] = 0;
     out->fd[1] = 1;
     out->pipee = NULL;
+    char * fp = strchr(out->cmd, '|'); // first pipe
+    char * lp = strrchr(out->cmd, '|'); // last pipe
 
-    redirect(out);
-    // char * to0 = strstr(cmd, " > ");
-    // if(to0) *to0 = 0;
-    // to0 = strstr(cmd, " < ");
-    // if(to0) *to0 = 0;
+    redirect(out, fp, lp); // here's hoping this works, eh?
     return out;
 }
 
 // takes line and splits into argument vector.
 Exec * parse(char * cmd, int bg) {
-    Exec * out = setup(cmd, bg);
+    Exec * out = setup(cmd, bg); // skeleton
 
     int i;
-    for(i = 0; cmd && (i < N_ARGS); i++ ) {
+    for(i = 0; cmd && (i < N_ARGS); i++) {
         char * temp = strsep(&cmd, " "); // this shreds cmd, and temp points to a location within what used to be cmd.
-        if(temp[0] == '{' || temp[0] == '[') continue; // skips redirection.
+        if(temp[0] == '{' || temp[0] == '[') continue; // skips redirection, we already handled that.
         int sp = spl(temp, out);
         switch(sp) {
             case -11: return pop(his); // bangbang
             case -7: return out; // & has to be at the end
-            case -1 : break;
-            case 0: return out;
-            default : return peep(his, sp);
+            case -1 : break; // nothing, keep going.
+            case 0: return out; // Dem pipes, man.
+            default : return peep(his, sp); // caret
         }
-        setenv("caret", "0", 1);
+        setenv("caret", "0", 1); // Coz we've an actual command on our hands.
 
+        // grunt work - ugh.
         if(!strcmp(temp, "~")) {
             temp = getenv("HOME");
         }
@@ -145,6 +160,7 @@ Exec * parse(char * cmd, int bg) {
             temp = getenv(++temp); // add more of these
         }
         
+        // takes string and puts in struct field.
         if(copy_arg(out->args + i, &temp)) break;
     }
 

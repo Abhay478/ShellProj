@@ -50,3 +50,4 @@ Exec * peep(History * the, int age);
 
 Exec * build_exec(char ** cmd, int bg);
 void lore(History * the);
+void strip_descriptors(Exec * done);
