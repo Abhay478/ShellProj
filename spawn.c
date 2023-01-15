@@ -19,6 +19,7 @@ void bb_wait(int f) {
 void pipist(Exec * the) {
     int g = fork();
     if(g) {
+        dup2(the->fd[0], 0);
         dup2(the->fd[1], 1);
         if(check_env("dbg")) printf("Output piped.\n");
         execvp(the->args[0], the->args);
