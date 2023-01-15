@@ -1,8 +1,0 @@
-Pipe redirected: 3
---------
-Args be: 
-1: "/usr/bin/grep"
-2: "a"
-IO be: 
-fd: 4 -> 3
---------
