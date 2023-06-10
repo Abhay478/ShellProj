@@ -1,7 +1,7 @@
 #include "osh.h"
 // extern int dbg, logs, sarg, mem;
 void show_env();
-int env(char ** arg) {
+int env(char ** arg) { // basically a big if ladder
     if(check_env("logs")) {
         printf("Env commands.\n");
     }
@@ -56,7 +56,7 @@ int env(char ** arg) {
 
 }
 
-void v_env(char ** argv) {
+void v_env(char ** argv) { // iterative ecaller.
     for(int i = 0; argv[i]; i++) {
         if(env(&argv[i])) {
             printf("Invalid environment command: %s\n", argv[i]);
@@ -64,6 +64,7 @@ void v_env(char ** argv) {
     }
 }
 
+// prints status of Exec.
 void what_exec(Exec * the) {
     if(!check_env("sarg")) return;
     if(!the->args) {printf("Clean.\n"); return;}
@@ -83,6 +84,7 @@ void what_exec(Exec * the) {
     printf("--------\n");
 }
 
+// evar init.
 void make_env() {
     setenv("dbg", "0", 0);
     setenv("logs", "0", 0);
@@ -94,6 +96,7 @@ void make_env() {
 
 }
 
+// evar display
 void show_env() {
     printf("dbg = %s\n", getenv("dbg"));
     printf("logs = %s\n", getenv("logs"));

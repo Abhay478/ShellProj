@@ -1,5 +1,7 @@
 #include "osh.h"
 
+// nomenclature neurolexical
+
 void strip_descriptors(Exec * done) {
     Exec * current = done;
     while(current) {

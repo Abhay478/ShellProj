@@ -15,7 +15,7 @@
 #define iter(a) over(0, a)
 #define riter(a) rover(0, a)
 
-#define MEMORY 20
+#define MEMORY 200
 
 typedef struct exe {
     char ** args;
