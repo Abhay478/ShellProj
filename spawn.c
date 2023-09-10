@@ -2,7 +2,6 @@
 
 void set_pipes(Exec * the) {
     if(check_env("dbg")) printf("Pipe be.\n");
-    // if(check_env("caret")) return;
     int piping[2];
     pipe(piping);
     the->fd[1] = piping[1];
@@ -26,6 +25,11 @@ void pipist(Exec * the) {
         execvp(the->args[0], the->args);
     }
     else {
+        if(the->pipee->pipee) {
+            if(check_env("dbg")) printf("Pipe chain.\n");
+            pipist(the->pipee); 
+            return;
+        }
         what_exec(the->pipee);
         dup2(the->pipee->fd[0], 0);
         if(check_env("dbg")) printf("Input piped.\n");

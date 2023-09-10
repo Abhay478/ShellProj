@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.tex": "latex",
+        "*.cpp": "cpp",
+        "*.rs": "rust",
+        "*.c": "c",
+        "*.sql": "sql",
+        "functional": "c"
+    }
+}

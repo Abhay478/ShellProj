@@ -95,7 +95,9 @@ int spl(char * temp, Exec * the) {
     if(!strcmp(temp, "|")) { // .
         if(check_env("logs")) printf("| handled.\n");
         char * tb = temp + 2; // Spacing restrictions - at least one space between | and other stuff.
-        the->pipee = build_exec(&tb, 1); // the recursive stuff that potentially makes multiple pipes work - remember, we called build_exec() in main, around four stack levels ago.
+        the->pipee = build_exec(&tb, 1); 
+        // the recursive stuff that potentially makes multiple pipes work - 
+        // remember, we called build_exec() in main, around four stack levels ago.
         return 0;
 
     }

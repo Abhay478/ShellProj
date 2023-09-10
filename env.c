@@ -66,19 +66,21 @@ void v_env(char ** argv) { // iterative ecaller.
 
 // prints status of Exec.
 void what_exec(Exec * the) {
+    static char s[] = "";
     if(!check_env("sarg")) return;
     if(!the->args) {printf("Clean.\n"); return;}
     printf("--------\n");
 
     if(check_env("logs")) printf("Args be: \n");
     for(int i = 0; the->args[i] && *(the->args[i]); i++)
-        printf("%d: \"%s\"\n", i + 1, the->args[i]);
+        printf("%s%d: \"%s\"\n", s, i + 1, the->args[i]);
 
     if(check_env("logs")) printf("IO be: \n");
-    printf("fd: %d -> %d\n", the->fd[0], the->fd[1]);
+    printf("%sfd: %d -> %d\n", s, the->fd[0], the->fd[1]);
 
     if(the->pipee) {
         if(check_env("logs")) printf("Pipee be: \n");
+        strcat(s, "\t");
         what_exec(the->pipee);
     }
     printf("--------\n");
